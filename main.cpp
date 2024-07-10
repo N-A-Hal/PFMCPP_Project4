@@ -258,28 +258,22 @@ FloatType::~FloatType()
 
 FloatType& FloatType::pow(float num)
 {
-    powInternal(num);
-    return *this;
+    return powInternal(num);
 }
 
 FloatType& FloatType::pow(const FloatType& ftype)
 {
-    powInternal(ftype);
-    return *this;
+    return powInternal(ftype);
 }
 
 FloatType& FloatType::pow(const IntType& ftype)
 {
-    float arg = static_cast<float>(ftype);
-    powInternal(arg);
-    return *this;
+    return powInternal(static_cast<float>(ftype));
 }
 
 FloatType& FloatType::pow(const DoubleType& ftype)
 {
-    float arg = static_cast<float>(ftype);
-    powInternal(arg);
-    return *this;
+    return powInternal(static_cast<float>(ftype));
 }
 
 FloatType& FloatType::powInternal(float arg)
@@ -332,28 +326,22 @@ DoubleType::~DoubleType()
 
 DoubleType& DoubleType::pow(double num)
 {
-    powInternal(num);
-    return *this;
+    return powInternal(num);
 }
 
 DoubleType& DoubleType::pow(const DoubleType& dtype)
 {
-    powInternal(static_cast<double>(dtype));
-    return *this;
+    return powInternal(static_cast<double>(dtype));
 }
 
 DoubleType& DoubleType::pow(const FloatType& ftype)
 {
-    double arg = static_cast<double>(ftype);
-    powInternal(arg);
-    return *this;
+    return powInternal(static_cast<double>(ftype));
 }
 
 DoubleType& DoubleType::pow(const IntType& itype)
 {
-    double arg = static_cast<double>(itype);
-    powInternal(arg);
-    return *this;
+    return powInternal(static_cast<double>(itype));
 }
 
 DoubleType& DoubleType::powInternal(double arg)
@@ -407,28 +395,22 @@ IntType::~IntType()
 
 IntType& IntType::pow(int num)
 {
-    powInternal(num);
-    return *this;
+    return powInternal(num);
 }
 
 IntType& IntType::pow(const IntType& itype)
 {
-    powInternal(static_cast<int>(itype));
-    return *this;
+    return powInternal(static_cast<int>(itype));
 }
 
 IntType& IntType::pow(const FloatType& ftype)
 {
-    int arg = static_cast<int>(ftype);
-    powInternal(arg);
-    return *this;
+    return powInternal(static_cast<int>(ftype));
 }
 
 IntType& IntType::pow(const DoubleType& dtype)
 {
-    int arg = static_cast<int>(dtype);
-    powInternal(arg);
-    return *this;
+    return powInternal(static_cast<int>(dtype));
 }
 
 IntType& IntType::powInternal(int arg)
