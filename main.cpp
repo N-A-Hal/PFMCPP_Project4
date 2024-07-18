@@ -236,32 +236,6 @@ struct HeapA
 #include <memory>
 #include <limits>
 
-/*
-struct IntType;
-struct DoubleType;
-struct FloatType 
-{
-    explicit FloatType(float v);
-    ~FloatType();
-    FloatType& operator+=(float num);
-    FloatType& operator-=(float num);
-    FloatType& operator*=(float num);
-    FloatType& operator/=(float num);
-    FloatType& pow(float num);
-    FloatType& pow(const FloatType& ftype);
-    FloatType& pow(const IntType& ftype);
-    FloatType& pow(const DoubleType& ftype);
-
-    FloatType& apply( std::function<FloatType&(FloatType&)> func );
-    FloatType& apply( void(*func)(FloatType&) );
-    
-    operator float() const;
-
-private:
-    std::unique_ptr<float> value = nullptr;
-    FloatType& powInternal(float arg);
-};
-*/
 
 template<typename T>
 struct Numeric
@@ -278,10 +252,39 @@ struct Numeric
     Numeric& operator/=(U num);
 
     Numeric& pow(Type num);
-    Numeric& pow(const Numeric& ntype);
+    template<typename U>
+    Numeric& pow(const Numeric<U>& ntype);
 
     Numeric& apply( std::function<Numeric<T>&(Numeric<T>&)> func );
     Numeric& apply( void(*func)(Numeric&) );
+
+    operator Type() const;
+
+private:
+    std::unique_ptr<Type> value = nullptr;
+    Numeric& powInternal(Type arg);
+};
+
+template<>
+struct Numeric<double>
+{
+    using Type = double;
+
+    explicit Numeric(Type v);
+    ~Numeric();
+    Numeric& operator+=(Type num);
+    Numeric& operator-=(Type num);
+    Numeric& operator*=(Type num);
+
+    template<typename U>
+    Numeric& operator/=(U num);
+
+    Numeric& pow(Type num);
+    template<typename U>
+    Numeric& pow(const Numeric<U>& ntype);
+
+    template<typename Callable>
+    Numeric& apply(Callable func);
 
     operator Type() const;
 
@@ -346,7 +349,7 @@ Numeric<T>& Numeric<T>::operator/=(U num)
         std::cout << "warning: floating point division by zero!" << std::endl;
     }
 
-    *value /= num;
+    *value /= static_cast<Type>(num);
     return *this;
 }
 
@@ -357,15 +360,23 @@ Numeric<T>& Numeric<T>::pow(Type num)
 }
 
 template<typename T>
-Numeric<T>& Numeric<T>::pow(const Numeric& ntype)
+template<typename U>
+Numeric<T>& Numeric<T>::pow(const Numeric<U>& ntype)
 {
-    return powInternal(ntype);
+    return powInternal(static_cast<Type>(ntype));
 }
 
 template<typename T>
 Numeric<T>& Numeric<T>::powInternal(Type arg)
 {
-    *value = std::pow(*value, arg);
+    if constexpr (std::is_same<Type, int>::value)
+    {
+        *value = static_cast<int>(std::pow(*value, arg));
+    }
+    else
+    {
+        *value = std::pow(*value, arg);
+    }
     return *this;
 }
 
@@ -395,314 +406,72 @@ Numeric<T>::operator Type() const
     return *value;
 }
 
-/*
-struct DoubleType
-{
-    explicit DoubleType(double v);
-    ~DoubleType();
-    DoubleType& operator+=(double num);
-    DoubleType& operator-=(double num);
-    DoubleType& operator*=(double num);
-    DoubleType& operator/=(double num);
-    DoubleType& pow(double num);
-    DoubleType& pow(const DoubleType& dtype);
-    DoubleType& pow(const FloatType& ftype);
-    DoubleType& pow(const IntType& itype);
-
-    DoubleType& apply( std::function<DoubleType&(DoubleType&)> func );
-    DoubleType& apply( void(*func)(DoubleType&) );
-
-    operator double() const;
-
-private:
-    double* value = nullptr;
-    DoubleType& powInternal(double arg);
-};
-
-struct IntType
-{
-    explicit IntType(int v);
-    ~IntType();
-    IntType& operator+=(int num);
-    IntType& operator-=(int num);
-    IntType& operator*=(int num);
-    IntType& operator/=(int num);
-    IntType& pow(int num);
-    IntType& pow(const IntType& itype);
-    IntType& pow(const FloatType& ftype);
-    IntType& pow(const DoubleType& dtype);
-
-    IntType& apply( std::function<IntType&(IntType&)> func );
-    IntType& apply( void(*func)(IntType&) );
-
-    operator int() const;
-
-private:
-    int* value = nullptr;
-    IntType& powInternal(int arg);
-};
-
-FloatType& FloatType::apply( std::function<FloatType&(FloatType&)> func )
-{
-    if (func)
-    {
-        return func(*this);
-    }
-    return *this;
-}
-
-FloatType& FloatType::apply( void(*func)(FloatType&) )
-{
-    if (func)
-    {
-        func(*this);
-    }
-    return *this;
-}
-
-FloatType::FloatType(float v) : value(std::make_unique<float>(v)) 
+Numeric<double>::Numeric(Type v) : value(std::make_unique<Type>(v)) 
 {
 }
 
-FloatType::~FloatType() 
+Numeric<double>::~Numeric() 
 {
 }
 
-FloatType& FloatType::pow(float num)
-{
-    return powInternal(num);
-}
-
-FloatType& FloatType::pow(const FloatType& ftype)
-{
-    return powInternal(ftype);
-}
-
-FloatType& FloatType::pow(const IntType& ftype)
-{
-    return powInternal(static_cast<float>(ftype));
-}
-
-FloatType& FloatType::pow(const DoubleType& ftype)
-{
-    return powInternal(static_cast<float>(ftype));
-}
-
-FloatType& FloatType::powInternal(float arg)
-{
-    *value = std::pow(*value, arg);
-    return *this;
-}
-
-FloatType& FloatType::operator+=(float num) 
+Numeric<double>& Numeric<double>::operator+=(Type num) 
 {
     *value += num;
     return *this;
 }
 
-FloatType& FloatType::operator-=(float num) 
+Numeric<double>& Numeric<double>::operator-=(Type num) 
 {
     *value -= num;
     return *this;
 }
 
-FloatType& FloatType::operator*=(float num) 
+Numeric<double>& Numeric<double>::operator*=(Type num) 
 {
     *value *= num;
     return *this;
 }
 
-FloatType& FloatType::operator/=(float num) 
+template<typename U>
+Numeric<double>& Numeric<double>::operator/=(U num) 
 {
-    if (num == 0.0f) 
+    if (num <= std::numeric_limits<U>::epsilon())
     {
         std::cout << "warning: floating point division by zero!" << std::endl;
-    } 
-    *value /= num;
-    return *this;
-}
-
-FloatType::operator float() const
-{
-    return *value;
-}
-
-DoubleType::DoubleType(double v) : value(new double(v)) 
-{
-}
-
-DoubleType::~DoubleType() 
-{
-    delete value;
-}
-
-DoubleType& DoubleType::apply( std::function<DoubleType&(DoubleType&)> func )
-{
-    if (func)
-    {
-        return func(*this);
     }
+
+    *value /= static_cast<Type>(num);
     return *this;
 }
 
-DoubleType& DoubleType::apply( void(*func)(DoubleType&) )
-{
-    if (func)
-    {
-        func(*this);
-    }
-    return *this;
-}
-
-DoubleType& DoubleType::pow(double num)
+Numeric<double>& Numeric<double>::pow(Type num)
 {
     return powInternal(num);
 }
 
-DoubleType& DoubleType::pow(const DoubleType& dtype)
+template<typename U>
+Numeric<double>& Numeric<double>::pow(const Numeric<U>& ntype)
 {
-    return powInternal(static_cast<double>(dtype));
+    return powInternal(static_cast<Type>(ntype));
 }
 
-DoubleType& DoubleType::pow(const FloatType& ftype)
+template<typename Callable>
+Numeric<double>& Numeric<double>::apply(Callable func)
 {
-    return powInternal(static_cast<double>(ftype));
+    func(*this);
+    return *this;
 }
 
-DoubleType& DoubleType::pow(const IntType& itype)
+Numeric<double>::operator Type() const
 {
-    return powInternal(static_cast<double>(itype));
+    return *value;
 }
 
-DoubleType& DoubleType::powInternal(double arg)
+Numeric<double>& Numeric<double>::powInternal(Type arg)
 {
     *value = std::pow(*value, arg);
     return *this;
 }
-
-DoubleType& DoubleType::operator+=(double num) 
-{
-    *value += num;
-    return *this;
-}
-
-DoubleType& DoubleType::operator-=(double num) 
-{
-    *value -= num;
-    return *this;
-}
-
-DoubleType& DoubleType::operator*=(double num) 
-{
-    *value *= num;
-    return *this;
-}
-
-DoubleType& DoubleType::operator/=(double num) 
-{
-    if (num == 0.0) 
-    {
-        std::cout << "warning: floating point division by zero!" << std::endl;
-    } 
-    *value /= num;
-    
-    return *this;
-}
-
-DoubleType::operator double() const
-{
-    return *value;
-}
-
-IntType::IntType(int v): value(new int(v))
-{
-}
-
-IntType::~IntType()
-{
-    delete value;
-}
-
-IntType& IntType::apply( std::function<IntType&(IntType&)> func )
-{
-    if (func)
-    {
-        return func(*this);
-    }
-    return *this;
-}
-
-IntType& IntType::apply( void(*func)(IntType&) )
-{
-    if (func)
-    {
-        func(*this);
-    }
-    return *this;
-}
-
-IntType& IntType::pow(int num)
-{
-    return powInternal(num);
-}
-
-IntType& IntType::pow(const IntType& itype)
-{
-    return powInternal(static_cast<int>(itype));
-}
-
-IntType& IntType::pow(const FloatType& ftype)
-{
-    return powInternal(static_cast<int>(ftype));
-}
-
-IntType& IntType::pow(const DoubleType& dtype)
-{
-    return powInternal(static_cast<int>(dtype));
-}
-
-IntType& IntType::powInternal(int arg)
-{
-    *value = static_cast<int>(std::pow(*value, arg));
-    return *this;
-}
-
-IntType& IntType::operator+=(int num)
-{
-    *value += num; 
-    return *this;
-}
-
-IntType& IntType::operator-=(int num)
-{
-    *value -= num;
-    return *this;
-}
-
-IntType& IntType::operator*=(int nums)
-{
-    *value *= nums;
-    return *this;
-}
-
-IntType& IntType::operator/=(int num)
-{
-    if (num == 0)
-    {
-        std::cout << "error: integer division by zero is an error and will crash the program!" << std::endl;
-    }
-    else
-    {
-        *value /= num;
-    }
-    return *this;
-}
-
-IntType::operator int() const
-{
-    return *value;
-}
-*/
 
 void part3()
 {
@@ -939,10 +708,7 @@ void part7()
     std::cout << "ft3 before: " << ft3 << std::endl;
 
     {
-        //using Type = float;
-        
-
-        ft3.apply([](Numeric<float>& obj) -> Numeric<float>& {
+        ft3.apply([](Numeric<decltype(ft3)::Type>& obj) -> Numeric<decltype(ft3)::Type>& {
             obj += 7.0f;
             return obj;
         });
@@ -959,9 +725,6 @@ void part7()
     std::cout << "dt3 before: " << dt3 << std::endl;
 
     {
-        //using Type = #4;
-        //dt3.apply( [](std::unique...){} ); // This calls the templated apply fcn
-
         dt3.apply([](Numeric<double>& obj) -> Numeric<double>& {
             obj += 6.0;
             return obj;
@@ -979,10 +742,7 @@ void part7()
     std::cout << "it3 before: " << it3 << std::endl;
 
     {
-        //using Type = #4;
-        //it3.apply( [](std::unique...){} );
-
-        it3.apply([](Numeric<int>& obj) -> Numeric<int>& {
+        it3.apply([](Numeric<decltype(it3)::Type>& obj) -> Numeric<decltype(it3)::Type>& {
             obj += 5;
             return obj;
         });
