@@ -236,33 +236,109 @@ struct HeapA
 #include <memory>
 #include <limits>
 
-
 template<typename T>
 struct Numeric
 {
     using Type = T;
 
-    explicit Numeric(Type v);
-    ~Numeric();
-    Numeric& operator+=(Type num);
-    Numeric& operator-=(Type num);
-    Numeric& operator*=(Type num);
+    explicit Numeric(Type v) : value(std::make_unique<Type>(v)) {}
+    ~Numeric() {}
+
+    Numeric& operator+=(Type num) 
+    {
+        *value += num;
+        return *this;
+    }
+
+    Numeric& operator-=(Type num) 
+    {
+        *value -= num;
+        return *this;
+    }
+
+    Numeric& operator*=(Type num) 
+    {
+        *value *= num;
+        return *this;
+    }
 
     template<typename U>
-    Numeric& operator/=(U num);
+    Numeric& operator/=(U num) 
+    {
+        if constexpr (std::is_same<Type, int>::value)
+        {
+            if constexpr (std::is_same<U, int>::value)
+            {
+                if (num == 0)
+                {
+                    std::cout << "error: integer division by zero is an error and will crash the program!" << std::endl;
+                    return *this;
+                }
+            }
+            else if(num <= std::numeric_limits<U>::epsilon())
+            {
+                std::cout << "can't divide integers by zero!" << std::endl;
+                return *this;
+            }
+        }
+        else if(num <= std::numeric_limits<U>::epsilon())
+        {
+            std::cout << "warning: floating point division by zero!" << std::endl;
+        }
 
-    Numeric& pow(Type num);
+        *value /= static_cast<Type>(num);
+        return *this;
+    }
+
+    Numeric& pow(Type num)
+    {
+        return powInternal(num);
+    }
+
     template<typename U>
-    Numeric& pow(const Numeric<U>& ntype);
+    Numeric& pow(const Numeric<U>& ntype)
+    {
+        return powInternal(static_cast<Type>(ntype));
+    }
 
-    Numeric& apply( std::function<Numeric<T>&(Numeric<T>&)> func );
-    Numeric& apply( void(*func)(Numeric&) );
+    Numeric& apply( std::function<Numeric&(Numeric&)> func )
+    {
+        if (func)
+        {
+            return func(*this);
+        }
+        return *this;
+    }
 
-    operator Type() const;
+    Numeric& apply( void(*func)(Numeric&) )
+    {
+        if (func)
+        {
+            func(*this);
+        }
+        return *this;
+    }
+
+    operator Type() const
+    {
+        return *value;
+    }
 
 private:
     std::unique_ptr<Type> value = nullptr;
-    Numeric& powInternal(Type arg);
+
+    Numeric& powInternal(Type arg)
+    {
+        if constexpr (std::is_same<Type, int>::value)
+        {
+            *value = static_cast<int>(std::pow(*value, arg));
+        }
+        else
+        {
+            *value = std::pow(*value, arg);
+        }
+        return *this;
+    }
 };
 
 template<>
@@ -270,208 +346,72 @@ struct Numeric<double>
 {
     using Type = double;
 
-    explicit Numeric(Type v);
-    ~Numeric();
-    Numeric& operator+=(Type num);
-    Numeric& operator-=(Type num);
-    Numeric& operator*=(Type num);
+    explicit Numeric(Type v) : value(std::make_unique<Type>(v)) {}
+    ~Numeric() {}
+
+    Numeric& operator+=(Type num) 
+    {
+        *value += num;
+        return *this;
+    }
+
+    Numeric& operator-=(Type num) 
+    {
+        *value -= num;
+        return *this;
+    }
+
+    Numeric& operator*=(Type num) 
+    {
+        *value *= num;
+        return *this;
+    }
 
     template<typename U>
-    Numeric& operator/=(U num);
+    Numeric& operator/=(U num) 
+    {
+        if (num <= std::numeric_limits<U>::epsilon())
+        {
+            std::cout << "warning: floating point division by zero!" << std::endl;
+        }
 
-    Numeric& pow(Type num);
+        *value /= static_cast<Type>(num);
+        return *this;
+    }
+
+    Numeric& pow(Type num)
+    {
+        return powInternal(num);
+    }
+
     template<typename U>
-    Numeric& pow(const Numeric<U>& ntype);
+    Numeric& pow(const Numeric<U>& ntype)
+    {
+        return powInternal(static_cast<Type>(ntype));
+    }
 
     template<typename Callable>
-    Numeric& apply(Callable func);
+    Numeric& apply(Callable func)
+    {
+        func(*this);
+        return *this;
+    }
 
-    operator Type() const;
+    operator Type() const
+    {
+        return *value;
+    }
 
 private:
     std::unique_ptr<Type> value = nullptr;
-    Numeric& powInternal(Type arg);
-};
 
-template<typename T>
-Numeric<T>::Numeric(Type v) : value(std::make_unique<Type>(v)) 
-{
-}
-
-template<typename T>
-Numeric<T>::~Numeric() 
-{
-}
-
-template<typename T>
-Numeric<T>& Numeric<T>::operator+=(Type num) 
-{
-    *value += num;
-    return *this;
-}
-
-template<typename T>
-Numeric<T>& Numeric<T>::operator-=(Type num) 
-{
-    *value -= num;
-    return *this;
-}
-
-template<typename T>
-Numeric<T>& Numeric<T>::operator*=(Type num) 
-{
-    *value *= num;
-    return *this;
-}
-
-template<typename T>
-template<typename U>
-Numeric<T>& Numeric<T>::operator/=(U num) 
-{
-    if constexpr (std::is_same<Type, int>::value)
-    {
-        if constexpr (std::is_same<U, int>::value)
-        {
-            if (num == 0)
-            {
-                std::cout << "error: integer division by zero is an error and will crash the program!" << std::endl;
-                return *this;
-            }
-        }
-        else if(num <= std::numeric_limits<U>::epsilon())
-        {
-            std::cout << "can't divide integers by zero!" << std::endl;
-            return *this;
-        }
-    }
-    else if(num <= std::numeric_limits<U>::epsilon())
-    {
-        std::cout << "warning: floating point division by zero!" << std::endl;
-    }
-
-    *value /= static_cast<Type>(num);
-    return *this;
-}
-
-template<typename T>
-Numeric<T>& Numeric<T>::pow(Type num)
-{
-    return powInternal(num);
-}
-
-template<typename T>
-template<typename U>
-Numeric<T>& Numeric<T>::pow(const Numeric<U>& ntype)
-{
-    return powInternal(static_cast<Type>(ntype));
-}
-
-template<typename T>
-Numeric<T>& Numeric<T>::powInternal(Type arg)
-{
-    if constexpr (std::is_same<Type, int>::value)
-    {
-        *value = static_cast<int>(std::pow(*value, arg));
-    }
-    else
+    Numeric& powInternal(Type arg)
     {
         *value = std::pow(*value, arg);
+        return *this;
     }
-    return *this;
-}
+};
 
-template<typename T>
-Numeric<T>& Numeric<T>::apply( std::function<Numeric<T>&(Numeric<T>&)> func )
-{
-    if (func)
-    {
-        return func(*this);
-    }
-    return *this;
-}
-
-template<typename T>
-Numeric<T>& Numeric<T>::apply( void(*func)(Numeric&) )
-{
-    if (func)
-    {
-        func(*this);
-    }
-    return *this;
-}
-
-template<typename T>
-Numeric<T>::operator Type() const
-{
-    return *value;
-}
-
-Numeric<double>::Numeric(Type v) : value(std::make_unique<Type>(v)) 
-{
-}
-
-Numeric<double>::~Numeric() 
-{
-}
-
-Numeric<double>& Numeric<double>::operator+=(Type num) 
-{
-    *value += num;
-    return *this;
-}
-
-Numeric<double>& Numeric<double>::operator-=(Type num) 
-{
-    *value -= num;
-    return *this;
-}
-
-Numeric<double>& Numeric<double>::operator*=(Type num) 
-{
-    *value *= num;
-    return *this;
-}
-
-template<typename U>
-Numeric<double>& Numeric<double>::operator/=(U num) 
-{
-    if (num <= std::numeric_limits<U>::epsilon())
-    {
-        std::cout << "warning: floating point division by zero!" << std::endl;
-    }
-
-    *value /= static_cast<Type>(num);
-    return *this;
-}
-
-Numeric<double>& Numeric<double>::pow(Type num)
-{
-    return powInternal(num);
-}
-
-template<typename U>
-Numeric<double>& Numeric<double>::pow(const Numeric<U>& ntype)
-{
-    return powInternal(static_cast<Type>(ntype));
-}
-
-template<typename Callable>
-Numeric<double>& Numeric<double>::apply(Callable func)
-{
-    func(*this);
-    return *this;
-}
-
-Numeric<double>::operator Type() const
-{
-    return *value;
-}
-
-Numeric<double>& Numeric<double>::powInternal(Type arg)
-{
-    *value = std::pow(*value, arg);
-    return *this;
-}
 
 void part3()
 {
