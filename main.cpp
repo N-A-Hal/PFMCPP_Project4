@@ -452,9 +452,8 @@ struct Point
     {
     }
 
-    template<typename U>
-    Point(const Numeric<U>& arg1, const Numeric<U>& arg2)
-        : Point(static_cast<float>(arg1), static_cast<float>(arg2)) {}
+    template<typename U, typename V>
+    Point(const U& arg1, const V& arg2) : Point( static_cast<float>(arg1), static_cast<float>(arg2) ) { }
 
     Point& multiply(float m)
     {
@@ -463,10 +462,10 @@ struct Point
         return *this;
     }
 
-    template<typename U>
-    Point& multiply(const Numeric<U>& m)
+    template<typename T>
+    Point& multiply(const T& t) 
     {
-        return multiply(static_cast<float>(m));
+        return multiply( static_cast<float>(t) );
     }
 
     void toString() const
