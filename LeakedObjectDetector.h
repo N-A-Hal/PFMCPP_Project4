@@ -20,6 +20,7 @@ namespace juce
                 std::cout << "*** Dangling pointer deletion! Class: " << getLeakedObjectClassName() << std::endl;
                 assert(false);
             }
+
         }
 
     private:
